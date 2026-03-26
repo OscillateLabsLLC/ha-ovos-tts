@@ -10,16 +10,16 @@ import aiohttp
 
 from homeassistant.components.tts import TextToSpeechEntity, TtsAudioType
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PORT, CONF_VERIFY_SSL
+from homeassistant.const import CONF_VERIFY_SSL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_LANG, CONF_VOICE, DOMAIN
+from .const import CONF_BASE_URL, CONF_LANG, CONF_SUPPORTED_LANGS, CONF_VOICE
 
 _LOGGER = logging.getLogger(__name__)
 
-CONTENT_TYPE_MAP = {
+_CONTENT_TYPE_MAP = {
     "audio/wav": "wav",
     "audio/x-wav": "wav",
     "audio/wave": "wav",
@@ -36,32 +36,33 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the OVOS TTS entity from a config entry."""
-    async_add_entities([OVOSTTSEntity(hass, config_entry)])
+    async_add_entities([OVOSTTSEntity(config_entry)])
 
 
 class OVOSTTSEntity(TextToSpeechEntity):
     """OVOS TTS Server entity."""
 
-    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    _attr_has_entity_name = True
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize the OVOS TTS entity."""
-        self.hass = hass
-        self._config_entry = config_entry
         self._attr_name = config_entry.title
         self._attr_unique_id = config_entry.entry_id
+        self._attr_default_language = config_entry.data.get(CONF_LANG, "en")
+        self._attr_supported_languages = config_entry.data.get(
+            CONF_SUPPORTED_LANGS, ["en"]
+        )
 
-        data = config_entry.data
-        self._base_url = data.get("base_url", f"{data[CONF_HOST]}:{data[CONF_PORT]}")
-        self._verify_ssl = data.get(CONF_VERIFY_SSL, True)
-        self._default_voice = data.get(CONF_VOICE)
-        self._attr_default_language = data.get(CONF_LANG, "en")
-        self._attr_supported_languages = data.get("supported_langs", ["en"])
+        self._base_url: str = config_entry.data[CONF_BASE_URL]
+        self._verify_ssl: bool = config_entry.data.get(CONF_VERIFY_SSL, True)
+        self._default_voice: str | None = config_entry.data.get(CONF_VOICE)
 
-        # Cached API version: None = untested, 2 = v2 works, 1 = v1 only
+        # Cached after first request: None = untested, 2 = v2 works, 1 = v1 only
         self._api_version: int | None = None
 
     @property
     def supported_options(self) -> list[str]:
-        """Return supported options."""
+        """Return supported options like voice."""
         return [CONF_VOICE]
 
     async def async_get_tts_audio(
@@ -87,11 +88,10 @@ class OVOSTTSEntity(TextToSpeechEntity):
         message: str,
         params: dict[str, str],
     ) -> TtsAudioType:
-        """Try v2, fall back to v1 if needed."""
+        """Try v2 endpoint, fall back to v1 if the server returns 404."""
         timeout = aiohttp.ClientTimeout(total=30)
 
         if self._api_version != 1:
-            # Try v2
             v2_params = {**params, "utterance": message}
             async with session.get(
                 f"{self._base_url}/v2/synthesize",
@@ -106,9 +106,8 @@ class OVOSTTSEntity(TextToSpeechEntity):
                 else:
                     resp.raise_for_status()
                     self._api_version = 2
-                    return self._parse_audio(resp, await resp.read())
+                    return _parse_audio(resp, await resp.read())
 
-        # v1 fallback
         encoded_utterance = quote(message, safe="")
         async with session.get(
             f"{self._base_url}/synthesize/{encoded_utterance}",
@@ -117,14 +116,14 @@ class OVOSTTSEntity(TextToSpeechEntity):
         ) as resp:
             resp.raise_for_status()
             self._api_version = 1
-            return self._parse_audio(resp, await resp.read())
+            return _parse_audio(resp, await resp.read())
 
-    def _parse_audio(
-        self, response: aiohttp.ClientResponse, audio_data: bytes
-    ) -> TtsAudioType:
-        """Determine audio format from response and return TtsAudioType."""
-        content_type = response.content_type or ""
-        # Strip parameters like charset
-        mime = content_type.split(";")[0].strip().lower()
-        extension = CONTENT_TYPE_MAP.get(mime, "wav")
-        return (extension, audio_data)
+
+def _parse_audio(
+    response: aiohttp.ClientResponse, audio_data: bytes
+) -> TtsAudioType:
+    """Determine audio format from Content-Type header."""
+    content_type = response.content_type or ""
+    mime = content_type.split(";")[0].strip().lower()
+    extension = _CONTENT_TYPE_MAP.get(mime, "wav")
+    return (extension, audio_data)

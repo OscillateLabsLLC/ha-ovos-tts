@@ -1,9 +1,9 @@
 {
   "domain": "ovos_tts",
   "name": "OVOS TTS Server",
-  "codeowners": ["@OscillateLabs"],
+  "codeowners": ["@OscillateLabsLLC"],
   "config_flow": true,
-  "documentation": "https://github.com/OscillateLabs/ha-ovos-tts",
+  "documentation": "https://github.com/OscillateLabsLLC/ha-ovos-tts",
   "integration_type": "service",
   "iot_class": "local_push",
   "requirements": [],

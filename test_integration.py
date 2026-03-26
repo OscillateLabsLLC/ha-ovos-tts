@@ -5,11 +5,14 @@ Spins up a fresh HA container, installs the custom component,
 drives the config flow via the REST API, and verifies TTS works.
 
 Usage:
-    python test_integration.py                                          # defaults
-    python test_integration.py --tts-host https://piper.example.com     # custom server
+    python test_integration.py --tts-host https://tts.example.com       # specify server
     python test_integration.py --tts-host http://10.0.0.5 --tts-port 9666
-    python test_integration.py --keep                                   # don't remove container after
+    python test_integration.py --keep                                   # keep container after
     python test_integration.py --ha-port 28123                          # custom HA port
+
+Environment variables:
+    OVOS_TTS_TEST_HOST  TTS server URL (default: http://localhost)
+    OVOS_TTS_TEST_PORT  TTS server port (default: 9666)
 """
 
 import argparse
@@ -27,8 +30,8 @@ import requests
 # Defaults
 DEFAULT_CONTAINER_NAME = "ha-ovos-tts-test"
 DEFAULT_HA_PORT = 18123
-DEFAULT_TTS_HOST = "https://piper.graywind.org"
-DEFAULT_TTS_PORT = 443
+DEFAULT_TTS_HOST = os.environ.get("OVOS_TTS_TEST_HOST", "http://localhost")
+DEFAULT_TTS_PORT = int(os.environ.get("OVOS_TTS_TEST_PORT", "9666"))
 DEFAULT_HA_USER = "test"
 DEFAULT_HA_PASSWORD = "testtest1"
 
