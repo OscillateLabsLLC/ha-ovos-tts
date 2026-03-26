@@ -1,0 +1,25 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "OVOS TTS Server",
+        "description": "Configure your OVOS TTS Server connection.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "voice": "Voice (optional)",
+          "language": "Language override (optional)",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the OVOS TTS server. Check the host and port.",
+      "invalid_lang": "The specified language is not supported by this server.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This OVOS TTS server is already configured."
+    }
+  }
+}
