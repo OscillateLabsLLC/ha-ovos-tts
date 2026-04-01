@@ -1,0 +1,51 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Server OVOS TTS",
+        "description": "Connettiti a un server OVOS TTS da utilizzare come motore di sintesi vocale per Home Assistant.",
+        "data": {
+          "host": "Host",
+          "port": "Porta",
+          "voice": "Voce",
+          "language": "Lingua",
+          "verify_ssl": "Verifica certificato SSL"
+        },
+        "data_description": {
+          "host": "Nome host o URL del tuo server OVOS TTS (es. 192.168.1.100 o https://tts.example.com).",
+          "port": "Numero di porta. Ignorato per URL HTTPS sulla porta 443.",
+          "voice": "Voce predefinita da utilizzare. Lascia vuoto per la voce predefinita del server.",
+          "language": "Sovrascrivi la lingua predefinita segnalata dal server.",
+          "verify_ssl": "Disabilita per consentire certificati autofirmati."
+        }
+      },
+      "reconfigure": {
+        "title": "Riconfigura Server OVOS TTS",
+        "description": "Aggiorna le impostazioni di connessione per il tuo server OVOS TTS.",
+        "data": {
+          "host": "Host",
+          "port": "Porta",
+          "voice": "Voce",
+          "language": "Lingua",
+          "verify_ssl": "Verifica certificato SSL"
+        },
+        "data_description": {
+          "host": "Nome host o URL del tuo server OVOS TTS (es. 192.168.1.100 o https://tts.example.com).",
+          "port": "Numero di porta. Ignorato per URL HTTPS sulla porta 443.",
+          "voice": "Voce predefinita da utilizzare. Lascia vuoto per la voce predefinita del server.",
+          "language": "Sovrascrivi la lingua predefinita segnalata dal server.",
+          "verify_ssl": "Disabilita per consentire certificati autofirmati."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi al server OVOS TTS. Verifica che host e porta siano corretti e che il server sia in esecuzione.",
+      "invalid_lang": "La lingua specificata non è supportata da questo server.",
+      "unknown": "Si è verificato un errore imprevisto."
+    },
+    "abort": {
+      "already_configured": "Questo server OVOS TTS è già configurato.",
+      "reconfigure_successful": "Riconfigurazione completata con successo."
+    }
+  }
+}

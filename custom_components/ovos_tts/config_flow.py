@@ -58,7 +58,8 @@ class OVOSTTSConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(
-        self, user_input: dict[str, Any] | None = None,
+        self,
+        user_input: dict[str, Any] | None = None,
     ) -> ConfigFlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
@@ -111,5 +112,72 @@ class OVOSTTSConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
+            errors=errors,
+        )
+
+    async def async_step_reconfigure(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> ConfigFlowResult:
+        """Handle reconfiguration of the integration."""
+        errors: dict[str, str] = {}
+        reconfigure_entry = self._get_reconfigure_entry()
+
+        if user_input is not None:
+            host = user_input[CONF_HOST].strip().rstrip("/")
+            port = user_input[CONF_PORT]
+            verify_ssl = user_input.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)
+
+            self._async_abort_entries_match({CONF_HOST: host, CONF_PORT: port})
+
+            base_url = _build_base_url(host, port)
+            session = async_get_clientsession(self.hass, verify_ssl=verify_ssl)
+
+            try:
+                async with session.get(
+                    f"{base_url}/status",
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as resp:
+                    resp.raise_for_status()
+                    data = await resp.json()
+            except (aiohttp.ClientError, TimeoutError):
+                errors["base"] = "cannot_connect"
+            except Exception:
+                _LOGGER.exception("Unexpected error connecting to OVOS TTS server")
+                errors["base"] = "unknown"
+            else:
+                supported_langs: list[str] = data.get("langs", [])
+                default_lang: str = data.get("default_lang", "en")
+                plugin_name: str = data.get("plugin", "unknown")
+
+                user_lang = user_input.get(CONF_LANG)
+                if user_lang and supported_langs and user_lang not in supported_langs:
+                    errors["base"] = "invalid_lang"
+                else:
+                    return self.async_update_reload_and_abort(
+                        reconfigure_entry,
+                        data_updates={
+                            CONF_HOST: host,
+                            CONF_PORT: port,
+                            CONF_VOICE: user_input.get(CONF_VOICE),
+                            CONF_LANG: user_lang or default_lang,
+                            CONF_VERIFY_SSL: verify_ssl,
+                            CONF_SUPPORTED_LANGS: supported_langs
+                            or [user_lang or default_lang],
+                            CONF_BASE_URL: base_url,
+                        },
+                        title=f"OVOS TTS ({plugin_name})",
+                    )
+
+        suggested_values: dict[str, Any] = {
+            **reconfigure_entry.data,
+            **(user_input or {}),
+        }
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                STEP_USER_DATA_SCHEMA, suggested_values
+            ),
             errors=errors,
         )

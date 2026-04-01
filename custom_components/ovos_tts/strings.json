@@ -18,6 +18,24 @@
           "language": "Override the default language reported by the server.",
           "verify_ssl": "Disable to allow self-signed certificates."
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure OVOS TTS Server",
+        "description": "Update the connection settings for your OVOS TTS Server.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "voice": "Voice",
+          "language": "Language",
+          "verify_ssl": "Verify SSL certificate"
+        },
+        "data_description": {
+          "host": "Hostname or URL of your OVOS TTS server (e.g. 192.168.1.100 or https://tts.example.com).",
+          "port": "Port number. Ignored for HTTPS URLs on port 443.",
+          "voice": "Default voice to use. Leave blank for the server default.",
+          "language": "Override the default language reported by the server.",
+          "verify_ssl": "Disable to allow self-signed certificates."
+        }
       }
     },
     "error": {
@@ -26,7 +44,8 @@
       "unknown": "An unexpected error occurred."
     },
     "abort": {
-      "already_configured": "This OVOS TTS server is already configured."
+      "already_configured": "This OVOS TTS server is already configured.",
+      "reconfigure_successful": "Reconfiguration successful."
     }
   }
 }
