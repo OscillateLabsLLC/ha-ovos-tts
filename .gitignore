@@ -4,3 +4,7 @@ __pycache__/
 dist/
 build/
 .venv/
+.coverage
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
