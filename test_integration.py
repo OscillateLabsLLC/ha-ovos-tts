@@ -73,17 +73,16 @@ class HATestHarness:
         self._tmpdir = tempfile.TemporaryDirectory()
         config_dir = os.path.join(self._tmpdir.name, "config")
         cc_dest = os.path.join(config_dir, "custom_components", "ovos_tts")
-        os.makedirs(cc_dest)
+        os.makedirs(os.path.dirname(cc_dest))
 
         src = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "custom_components",
             "ovos_tts",
         )
-        for f in os.listdir(src):
-            filepath = os.path.join(src, f)
-            if os.path.isfile(filepath):
-                shutil.copy2(filepath, cc_dest)
+        # copytree, not per-file copy: translations/ must ship or entity
+        # names silently fail to resolve
+        shutil.copytree(src, cc_dest, ignore=shutil.ignore_patterns("__pycache__"))
 
         with open(os.path.join(config_dir, "configuration.yaml"), "w") as f:
             f.write("default_config:\n")
@@ -281,7 +280,9 @@ class HATestHarness:
         self._record("tts_get_url", True, tts_path)
 
         # Fetch audio via the path (using localhost, not container IP)
-        audio_url = f"{self.ha_base}{tts_path}" if tts_path.startswith("/") else tts_path
+        audio_url = (
+            f"{self.ha_base}{tts_path}" if tts_path.startswith("/") else tts_path
+        )
         # Replace any container-internal IPs with localhost
         audio_url = re.sub(
             r"http://[\d.]+:8123",

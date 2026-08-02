@@ -1,0 +1,66 @@
+[project]
+name = "ha-ovos-tts"
+version = "1.0.0"
+description = "Home Assistant custom integration for OVOS TTS Server"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "pytest-homeassistant-custom-component",
+  "pytest-cov",
+  # requirements of HA's tts/ffmpeg components, needed to import tts in tests
+  "mutagen",
+  "ha-ffmpeg",
+  "mypy",
+  "ruff",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["custom_components.ovos_tts"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+  "B",      # bugbear
+  "C4",     # comprehensions
+  "D",      # docstrings
+  "E",      # pycodestyle errors
+  "F",      # pyflakes
+  "I",      # isort
+  "N",      # naming
+  "PL",     # pylint
+  "RUF",    # ruff-specific
+  "SIM",    # simplify
+  "UP",     # pyupgrade
+  "W",      # pycodestyle warnings
+]
+ignore = [
+  "D203",   # incompatible with D211
+  "D213",   # incompatible with D212
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D", "PLR2004"]
+"test_integration.py" = ["D", "E501", "PLR2004", "PLW1510"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["custom_components/ovos_tts"]
+
+[[tool.mypy.overrides]]
+module = "homeassistant.*"
+follow_imports = "silent"
