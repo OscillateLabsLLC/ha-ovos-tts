@@ -4,20 +4,20 @@ from __future__ import annotations
 
 import logging
 from typing import Any
-from urllib.parse import quote
 
 import aiohttp
-
-from homeassistant.components.tts import TextToSpeechEntity, TtsAudioType
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_VERIFY_SSL
+from homeassistant.components.tts import ATTR_VOICE, TextToSpeechEntity, TtsAudioType
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_BASE_URL, CONF_LANG, CONF_SUPPORTED_LANGS, CONF_VOICE
+from . import OvosTtsConfigEntry
+from .const import CONF_LANG, CONF_VOICE, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 0
 
 _CONTENT_TYPE_MAP = {
     "audio/wav": "wav",
@@ -28,11 +28,14 @@ _CONTENT_TYPE_MAP = {
     "audio/ogg": "ogg",
     "audio/flac": "flac",
 }
+_DEFAULT_EXTENSION = "wav"
+# Common for servers that send raw audio without declaring a type; no warning.
+_OPAQUE_CONTENT_TYPES = {"", "application/octet-stream"}
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: OvosTtsConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the OVOS TTS entity from a config entry."""
@@ -42,88 +45,68 @@ async def async_setup_entry(
 class OVOSTTSEntity(TextToSpeechEntity):
     """OVOS TTS Server entity."""
 
+    # NOTE: TTS entities must have a non-None name (the speech manager uses it
+    # as the cache key), so device-name inheritance via _attr_name = None does
+    # not work here; use a translated entity name instead.
     _attr_has_entity_name = True
+    _attr_translation_key = "ovos_tts"
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
+    def __init__(self, config_entry: OvosTtsConfigEntry) -> None:
         """Initialize the OVOS TTS entity."""
-        self._attr_name = config_entry.title
-        self._attr_unique_id = config_entry.entry_id
-        self._attr_default_language = config_entry.data.get(CONF_LANG, "en")
-        self._attr_supported_languages = config_entry.data.get(
-            CONF_SUPPORTED_LANGS, ["en"]
-        )
-
-        self._base_url: str = config_entry.data[CONF_BASE_URL]
-        self._verify_ssl: bool = config_entry.data.get(CONF_VERIFY_SSL, True)
+        runtime = config_entry.runtime_data
+        self._attr_supported_options = [ATTR_VOICE]
+        self._client = runtime.client
         self._default_voice: str | None = config_entry.data.get(CONF_VOICE)
 
-        # Cached after first request: None = untested, 2 = v2 works, 1 = v1 only
-        self._api_version: int | None = None
-
-    @property
-    def supported_options(self) -> list[str]:
-        """Return supported options like voice."""
-        return [CONF_VOICE]
+        self._attr_unique_id = config_entry.entry_id
+        self._attr_default_language = (
+            config_entry.data.get(CONF_LANG) or runtime.status.default_lang
+        )
+        # HA requires default_language to be in supported_languages, but some
+        # servers report a default ("en-US") missing from langs (["en", ...]).
+        langs = runtime.status.supported_langs
+        self._attr_supported_languages = (
+            langs
+            if self._attr_default_language in langs
+            else [*langs, self._attr_default_language]
+        )
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, config_entry.entry_id)},
+            name=config_entry.title,
+            manufacturer="OpenVoiceOS",
+            model=runtime.status.plugin,
+            entry_type=DeviceEntryType.SERVICE,
+            configuration_url=runtime.client.base_url,
+        )
 
     async def async_get_tts_audio(
         self, message: str, language: str, options: dict[str, Any]
     ) -> TtsAudioType:
         """Synthesize speech via the OVOS TTS server."""
-        session = async_get_clientsession(self.hass, verify_ssl=self._verify_ssl)
-        voice = options.get(CONF_VOICE, self._default_voice)
-
-        params: dict[str, str] = {"lang": language}
-        if voice:
-            params["voice"] = voice
+        voice = options.get(ATTR_VOICE, self._default_voice)
 
         try:
-            return await self._synthesize(session, message, params)
-        except Exception:
-            _LOGGER.exception("Error synthesizing speech via OVOS TTS server")
-            return (None, None)
+            content_type, audio = await self._client.async_synthesize(
+                message, language, voice
+            )
+        except (aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.debug("Speech synthesis request failed", exc_info=True)
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="synthesize_failed",
+            ) from err
 
-    async def _synthesize(
-        self,
-        session: aiohttp.ClientSession,
-        message: str,
-        params: dict[str, str],
-    ) -> TtsAudioType:
-        """Try v2 endpoint, fall back to v1 if the server returns 404."""
-        timeout = aiohttp.ClientTimeout(total=30)
-
-        if self._api_version != 1:
-            v2_params = {**params, "utterance": message}
-            async with session.get(
-                f"{self._base_url}/v2/synthesize",
-                params=v2_params,
-                timeout=timeout,
-            ) as resp:
-                if resp.status == 404:
-                    _LOGGER.info(
-                        "OVOS TTS server does not support v2 API, falling back to v1"
-                    )
-                    self._api_version = 1
-                else:
-                    resp.raise_for_status()
-                    self._api_version = 2
-                    return _parse_audio(resp, await resp.read())
-
-        encoded_utterance = quote(message, safe="")
-        async with session.get(
-            f"{self._base_url}/synthesize/{encoded_utterance}",
-            params=params,
-            timeout=timeout,
-        ) as resp:
-            resp.raise_for_status()
-            self._api_version = 1
-            return _parse_audio(resp, await resp.read())
+        return (_extension_from_content_type(content_type), audio)
 
 
-def _parse_audio(
-    response: aiohttp.ClientResponse, audio_data: bytes
-) -> TtsAudioType:
-    """Determine audio format from Content-Type header."""
-    content_type = response.content_type or ""
-    mime = content_type.split(";")[0].strip().lower()
-    extension = _CONTENT_TYPE_MAP.get(mime, "wav")
-    return (extension, audio_data)
+def _extension_from_content_type(content_type: str) -> str:
+    """Map a Content-Type header to an audio file extension."""
+    mime = content_type.split(";", maxsplit=1)[0].strip().lower()
+    if mime in _CONTENT_TYPE_MAP:
+        return _CONTENT_TYPE_MAP[mime]
+    if mime not in _OPAQUE_CONTENT_TYPES:
+        _LOGGER.warning(
+            "Unexpected Content-Type %r from OVOS TTS server; assuming WAV audio",
+            content_type,
+        )
+    return _DEFAULT_EXTENSION

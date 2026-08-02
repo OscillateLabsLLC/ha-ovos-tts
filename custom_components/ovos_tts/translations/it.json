@@ -47,5 +47,20 @@
       "already_configured": "Questo server OVOS TTS è già configurato.",
       "reconfigure_successful": "Riconfigurazione completata con successo."
     }
+  },
+  "entity": {
+    "tts": {
+      "ovos_tts": {
+        "name": "Sintesi vocale"
+      }
+    }
+  },
+  "exceptions": {
+    "cannot_connect": {
+      "message": "Impossibile raggiungere il server OVOS TTS all'indirizzo {base_url}."
+    },
+    "synthesize_failed": {
+      "message": "Il server OVOS TTS non è riuscito a sintetizzare la voce."
+    }
   }
 }

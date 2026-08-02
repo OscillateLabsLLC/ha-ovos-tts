@@ -1,0 +1,111 @@
+# Tracks this integration against the Home Assistant integration quality scale.
+# https://developers.home-assistant.io/docs/core/integration-quality-scale/
+# The official scale only applies to core integrations; this file documents
+# how this custom integration measures up rule by rule.
+rules:
+  # Bronze
+  action-setup:
+    status: exempt
+    comment: No custom service actions; only the built-in TTS entity services.
+  appropriate-polling:
+    status: exempt
+    comment: Request/response TTS; nothing is polled on an interval.
+  brands:
+    status: todo
+    comment: Submit logo/icon to home-assistant/brands (custom_integrations/).
+  common-modules:
+    status: done
+    comment: API client in api.py; no coordinator needed (no polled data).
+  config-flow: done
+  config-flow-test-coverage: done
+  dependency-transparency:
+    status: done
+    comment: No requirements; uses Home Assistant's bundled aiohttp.
+  docs-actions:
+    status: exempt
+    comment: No custom service actions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  entity-event-setup:
+    status: exempt
+    comment: Entity does not subscribe to external events.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # Silver
+  action-exceptions:
+    status: done
+    comment: TTS failures raise HomeAssistantError with translation keys.
+  config-entry-unloading: done
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
+  entity-unavailable:
+    status: exempt
+    comment: >
+      Request/response TTS entity; there is no polled data stream from which
+      to derive availability between requests.
+  integration-owner: done
+  log-when-unavailable:
+    status: exempt
+    comment: See entity-unavailable; failures surface as translated errors.
+  parallel-updates: done
+  reauthentication-flow:
+    status: exempt
+    comment: The OVOS TTS server API has no authentication.
+  test-coverage: done
+
+  # Gold
+  devices: done
+  diagnostics: done
+  discovery:
+    status: exempt
+    comment: OVOS TTS Server does not advertise itself (no mDNS/zeroconf/SSDP).
+  discovery-update-info:
+    status: exempt
+    comment: No discovery support.
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices:
+    status: exempt
+    comment: One service device per config entry; nothing appears dynamically.
+  entity-category:
+    status: exempt
+    comment: Single primary TTS entity; no diagnostic/config entities.
+  entity-device-class:
+    status: exempt
+    comment: TTS entities have no device class.
+  entity-disabled-by-default:
+    status: exempt
+    comment: Single primary entity; nothing is noisy or secondary.
+  entity-translations:
+    status: done
+    comment: >
+      Entity name via translation_key. NOTE: TTS entities cannot use
+      _attr_name = None device-name inheritance — the speech manager
+      requires a non-None entity name.
+  exception-translations: done
+  icon-translations:
+    status: exempt
+    comment: Single entity using the default TTS domain icon.
+  reconfiguration-flow: done
+  repair-issues:
+    status: exempt
+    comment: No repairable conditions; connection problems surface via setup retry.
+  stale-devices:
+    status: exempt
+    comment: The only device is removed with its config entry.
+
+  # Platinum
+  async-dependency: done
+  inject-websession: done
+  strict-typing: done
