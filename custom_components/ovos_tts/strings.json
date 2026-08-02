@@ -12,7 +12,7 @@
           "verify_ssl": "Verify SSL certificate"
         },
         "data_description": {
-          "host": "Hostname or URL of your OVOS TTS server (e.g. 192.168.1.100 or https://tts.example.com).",
+          "host": "Hostname, IP address, or full URL (including the scheme) of your OVOS TTS server.",
           "port": "Port number. Ignored for HTTPS URLs on port 443.",
           "voice": "Default voice to use. Leave blank for the server default.",
           "language": "Override the default language reported by the server.",
@@ -30,7 +30,7 @@
           "verify_ssl": "Verify SSL certificate"
         },
         "data_description": {
-          "host": "Hostname or URL of your OVOS TTS server (e.g. 192.168.1.100 or https://tts.example.com).",
+          "host": "Hostname, IP address, or full URL (including the scheme) of your OVOS TTS server.",
           "port": "Port number. Ignored for HTTPS URLs on port 443.",
           "voice": "Default voice to use. Leave blank for the server default.",
           "language": "Override the default language reported by the server.",

@@ -12,7 +12,7 @@
           "verify_ssl": "Verifica certificato SSL"
         },
         "data_description": {
-          "host": "Nome host o URL del tuo server OVOS TTS (es. 192.168.1.100 o https://tts.example.com).",
+          "host": "Nome host, indirizzo IP o URL completo (incluso lo schema) del tuo server OVOS TTS.",
           "port": "Numero di porta. Ignorato per URL HTTPS sulla porta 443.",
           "voice": "Voce predefinita da utilizzare. Lascia vuoto per la voce predefinita del server.",
           "language": "Sovrascrivi la lingua predefinita segnalata dal server.",
@@ -30,7 +30,7 @@
           "verify_ssl": "Verifica certificato SSL"
         },
         "data_description": {
-          "host": "Nome host o URL del tuo server OVOS TTS (es. 192.168.1.100 o https://tts.example.com).",
+          "host": "Nome host, indirizzo IP o URL completo (incluso lo schema) del tuo server OVOS TTS.",
           "port": "Numero di porta. Ignorato per URL HTTPS sulla porta 443.",
           "voice": "Voce predefinita da utilizzare. Lascia vuoto per la voce predefinita del server.",
           "language": "Sovrascrivi la lingua predefinita segnalata dal server.",
