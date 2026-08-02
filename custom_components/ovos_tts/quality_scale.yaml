@@ -12,7 +12,10 @@ rules:
     comment: Request/response TTS; nothing is polled on an interval.
   brands:
     status: todo
-    comment: Submit logo/icon to home-assistant/brands (custom_integrations/).
+    comment: >
+      Local brand assets in brand/ satisfy the HACS check; submitting to
+      home-assistant/brands (custom_integrations/) is still pending and is
+      what makes icons show in the HA frontend.
   common-modules:
     status: done
     comment: API client in api.py; no coordinator needed (no polled data).
